@@ -20,6 +20,13 @@ export function formatPct(value: number): string {
   return `${value.toFixed(0)}%`;
 }
 
+/** The embedded PDF font (PT Sans) has no ₸ glyph — swap in the standard "тг." abbreviation for any text rendered into a PDF. */
+export function forPdf(text: string): string {
+  // "тг." already ends in a period, so where "₸" itself was followed by a sentence-ending
+  // period, consume that period too instead of doubling it up into "тг..".
+  return text.replace(/₸\./g, 'тг.').replace(/₸/g, 'тг.');
+}
+
 export function formatMonths(months: number | null): string {
   if (months === null) return '—';
   if (months === 0) return 'уже погашено';

@@ -8,7 +8,7 @@ const NAV: { key: ConsoleScreen; label: string; hint: string }[] = [
   { key: 'whatIf', label: 'Что будет, если…', hint: 'Моделирование' },
   { key: 'reverse', label: 'Обратный калькулятор', hint: 'От срока к выручке' },
   { key: 'scenarios', label: 'Сценарии', hint: 'Консервативный / Базовый / Рост' },
-  { key: 'summary', label: 'Описание для банка', hint: 'Меморандум для печати' },
+  { key: 'summary', label: 'Описание', hint: 'Меморандум для печати' },
   { key: 'export', label: 'Экспорт и данные', hint: 'PDF · Excel · CSV · JSON' },
 ];
 

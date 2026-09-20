@@ -82,7 +82,7 @@ export function Dashboard() {
             variant={isApproved ? 'outline' : 'primary'}
             onClick={() => (isApproved ? setConsoleScreen('summary') : approveActiveScenario())}
           >
-            {isApproved ? 'Открыть описание для банка' : 'Утвердить сценарий'}
+            {isApproved ? 'Открыть описание' : 'Утвердить сценарий'}
           </Button>
         </div>
       </div>

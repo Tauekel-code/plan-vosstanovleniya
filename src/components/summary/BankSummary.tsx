@@ -1,11 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { computeDebtForecast } from '../../engine/financialEngine';
 import { buildBankView } from '../../engine/bankViewModel';
 import { buildBankNarrative } from '../../engine/narrative';
+import { downloadNarrativePdf, narrativePdfBlob } from '../../engine/exportEngine';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../utils/format';
+
+function pdfFilename(scenarioName: string) {
+  const safeName = scenarioName.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-');
+  return `opisanie-${safeName}.pdf`;
+}
 
 export function BankSummary() {
   const scenarios = useAppStore((s) => s.scenarios);
@@ -36,12 +42,45 @@ export function BankSummary() {
   }, [scenario]);
 
   const narrative = isApproved ? buildBankNarrative(bankView, scenario.name, approvedAt!) : null;
+  const [sharing, setSharing] = useState(false);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+
+  function handleDownload() {
+    if (!narrative) return;
+    downloadNarrativePdf(narrative, bankView, pdfFilename(scenario.name));
+  }
+
+  async function handleShare() {
+    if (!narrative) return;
+    setSharing(true);
+    setShareNotice(null);
+    try {
+      const blob = narrativePdfBlob(narrative, bankView);
+      const file = new File([blob], pdfFilename(scenario.name), { type: 'application/pdf' });
+      const nav = navigator as Navigator & {
+        canShare?: (data: { files: File[] }) => boolean;
+        share?: (data: { files: File[]; title: string; text: string }) => Promise<void>;
+      };
+      if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title: narrative.title, text: narrative.scenarioLine });
+      } else {
+        downloadNarrativePdf(narrative, bankView, pdfFilename(scenario.name));
+        setShareNotice('Этот браузер не умеет отправлять файлы напрямую — PDF скачан, приложите его вручную в письмо или мессенджер.');
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setShareNotice('Не удалось отправить — попробуйте скачать файл и отправить его вручную.');
+      }
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <div className="pb-16">
       <div className="mb-6 flex items-start justify-between print:hidden">
         <div>
-          <h1 className="text-display text-2xl font-semibold text-white">Описание для банка</h1>
+          <h1 className="text-display text-2xl font-semibold text-white">Описание</h1>
           <p className="mt-1 text-sm text-white/45">
             Деловой меморандум по текущему сценарию «{scenario.name}» — на основе тех же данных, что видит банк.
           </p>
@@ -53,12 +92,28 @@ export function BankSummary() {
             </Button>
           )}
           {isApproved && (
+            <Button variant="outline" onClick={handleDownload}>
+              Скачать
+            </Button>
+          )}
+          {isApproved && (
+            <Button variant="outline" onClick={handleShare} disabled={sharing}>
+              {sharing ? 'Отправка…' : 'Отправить'}
+            </Button>
+          )}
+          {isApproved && (
             <Button variant="primary" onClick={() => window.print()}>
               Печать
             </Button>
           )}
         </div>
       </div>
+
+      {shareNotice && (
+        <div className="mb-6 rounded-lg border border-brass/30 bg-brass/10 px-4 py-3 text-sm text-brass-soft print:hidden">
+          {shareNotice}
+        </div>
+      )}
 
       {!isApproved && (
         <Card className="p-8 text-center print:hidden">
