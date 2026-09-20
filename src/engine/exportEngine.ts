@@ -12,7 +12,6 @@ import type { BankView } from './bankViewModel';
 import { serializeBankView } from './bankViewModel';
 import { formatCurrency, forPdf } from '../utils/format';
 import { useCyrillicFont } from './pdfFont';
-import type { BankNarrative } from './narrative';
 
 export type ExportKind = 'full' | 'bank';
 export type ExportFormat = 'json' | 'csv' | 'xlsx' | 'pdf';
@@ -159,86 +158,4 @@ export function downloadPDF(
   });
 
   doc.save(filename);
-}
-
-/** One-page memo PDF for the approved-scenario narrative (§ "Описание"). Shared by download and share. */
-export function buildNarrativePdfDoc(narrative: BankNarrative, bankView: BankView): jsPDF {
-  const doc = new jsPDF();
-  useCyrillicFont(doc);
-  const marginX = 18;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const textWidth = pageWidth - marginX * 2;
-  let y = 20;
-
-  doc.setFont('PTSans', 'bold');
-  doc.setFontSize(15);
-  doc.text(forPdf(narrative.title), marginX, y);
-  y += 8;
-
-  doc.setFont('PTSans', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(110);
-  doc.text(forPdf(narrative.dateLine), marginX, y);
-  y += 5;
-  doc.text(forPdf(narrative.scenarioLine), marginX, y);
-  y += 4;
-  doc.setDrawColor(220);
-  doc.line(marginX, y, pageWidth - marginX, y);
-  y += 8;
-
-  doc.setTextColor(20);
-  doc.setFontSize(11);
-  for (const paragraph of narrative.paragraphs) {
-    const lines = doc.splitTextToSize(forPdf(paragraph), textWidth);
-    doc.text(lines, marginX, y);
-    y += lines.length * 5.5 + 4;
-  }
-
-  y += 2;
-  doc.setDrawColor(230);
-  doc.setFillColor(248, 248, 246);
-  doc.roundedRect(marginX, y, textWidth, 26, 2, 2, 'FD');
-  const figures: [string, string][] = [
-    ['Выручка', forPdf(formatCurrency(bankView.revenue))],
-    ['Платёж банку', forPdf(formatCurrency(bankView.bankPaymentThisMonth))],
-    ['Остаток долга', forPdf(formatCurrency(bankView.bankDebtRemaining))],
-    ['Доля банка / бизнеса', `${bankView.bankSharePct}% / ${bankView.businessSharePct}%`],
-  ];
-  const colWidth = textWidth / 2;
-  figures.forEach(([label, value], i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const fx = marginX + 6 + col * colWidth;
-    const fy = y + 8 + row * 12;
-    doc.setFontSize(8);
-    doc.setTextColor(140);
-    doc.text(label, fx, fy);
-    doc.setFont('PTSans', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(20);
-    doc.text(value, fx, fy + 5.5);
-    doc.setFont('PTSans', 'normal');
-  });
-  y += 26 + 8;
-
-  doc.setFontSize(11);
-  doc.setTextColor(60);
-  const closingLines = doc.splitTextToSize(forPdf(narrative.closing), textWidth);
-  doc.text(closingLines, marginX, y);
-  y += closingLines.length * 5.5 + 18;
-
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text('Подпись: _______________________', marginX, y);
-  doc.text('Дата: _______________________', pageWidth - marginX - 55, y);
-
-  return doc;
-}
-
-export function downloadNarrativePdf(narrative: BankNarrative, bankView: BankView, filename: string) {
-  buildNarrativePdfDoc(narrative, bankView).save(filename);
-}
-
-export function narrativePdfBlob(narrative: BankNarrative, bankView: BankView): Blob {
-  return buildNarrativePdfDoc(narrative, bankView).output('blob');
 }

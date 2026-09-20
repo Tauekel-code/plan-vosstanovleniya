@@ -9,8 +9,8 @@ import { InstrumentSlider } from '../ui/InstrumentSlider';
 import { LiquidityChannel, type ChannelSegment } from '../ui/LiquidityChannel';
 import { WarningBanner } from '../ui/WarningBanner';
 import { buildBankViewFromScenario } from '../../engine/bankViewModel';
-import { buildBankNarrative, narrativePdfFilename } from '../../engine/narrative';
-import { downloadNarrativePdf } from '../../engine/exportEngine';
+import { buildBankNarrative, narrativeFilename } from '../../engine/narrative';
+import { downloadNarrativeDocx } from '../../engine/narrativeDocx';
 import { DistributionEditor } from './DistributionEditor';
 import { ExpensesEditor } from './ExpensesEditor';
 import { DebtEditor } from './DebtEditor';
@@ -65,7 +65,7 @@ export function Dashboard() {
   const bankJustPaidOff = scenario.debt.bankDebt <= 0;
   const isApproved = approvedScenarioId === scenario.id;
 
-  function handleDownloadScenario() {
+  async function handleDownloadScenario() {
     if (isApproved) {
       setConsoleScreen('summary');
       return;
@@ -73,7 +73,7 @@ export function Dashboard() {
     const approvedAt = approveActiveScenario();
     const bankView = buildBankViewFromScenario(scenario);
     const narrative = buildBankNarrative(bankView, scenario.name, approvedAt);
-    downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
+    await downloadNarrativeDocx(narrative, bankView, narrativeFilename(scenario.name, 'docx'));
   }
 
   return (

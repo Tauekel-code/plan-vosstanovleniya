@@ -18,9 +18,9 @@ export interface BankNarrative {
   closing: string;
 }
 
-export function narrativePdfFilename(scenarioName: string): string {
+export function narrativeFilename(scenarioName: string, ext: 'docx' | 'pdf'): string {
   const safeName = scenarioName.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-');
-  return `opisanie-${safeName}.pdf`;
+  return `opisanie-${safeName}.${ext}`;
 }
 
 export function buildBankNarrative(

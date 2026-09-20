@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { buildBankViewFromScenario } from '../../engine/bankViewModel';
-import { buildBankNarrative, narrativePdfFilename } from '../../engine/narrative';
-import { downloadNarrativePdf, narrativePdfBlob } from '../../engine/exportEngine';
+import { buildBankNarrative, narrativeFilename } from '../../engine/narrative';
+import { buildNarrativeDocxBlob, downloadNarrativeDocx } from '../../engine/narrativeDocx';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../utils/format';
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 export function BankSummary() {
   const scenarios = useAppStore((s) => s.scenarios);
@@ -24,15 +26,15 @@ export function BankSummary() {
   const [sharing, setSharing] = useState(false);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
 
-  function handleDownload() {
+  async function handleDownload() {
     if (narrative) {
-      downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
+      await downloadNarrativeDocx(narrative, bankView, narrativeFilename(scenario.name, 'docx'));
       return;
     }
     // Not approved yet — approve first, then build the memo from that exact timestamp.
     const newApprovedAt = approveActiveScenario();
     const freshNarrative = buildBankNarrative(bankView, scenario.name, newApprovedAt);
-    downloadNarrativePdf(freshNarrative, bankView, narrativePdfFilename(scenario.name));
+    await downloadNarrativeDocx(freshNarrative, bankView, narrativeFilename(scenario.name, 'docx'));
   }
 
   async function handleShare() {
@@ -40,8 +42,8 @@ export function BankSummary() {
     setSharing(true);
     setShareNotice(null);
     try {
-      const blob = narrativePdfBlob(narrative, bankView);
-      const file = new File([blob], narrativePdfFilename(scenario.name), { type: 'application/pdf' });
+      const blob = await buildNarrativeDocxBlob(narrative, bankView);
+      const file = new File([blob], narrativeFilename(scenario.name, 'docx'), { type: DOCX_MIME });
       const nav = navigator as Navigator & {
         canShare?: (data: { files: File[] }) => boolean;
         share?: (data: { files: File[]; title: string; text: string }) => Promise<void>;
@@ -49,8 +51,8 @@ export function BankSummary() {
       if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
         await nav.share({ files: [file], title: narrative.title, text: narrative.scenarioLine });
       } else {
-        downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
-        setShareNotice('Этот браузер не умеет отправлять файлы напрямую — PDF скачан, приложите его вручную в письмо или мессенджер.');
+        await downloadNarrativeDocx(narrative, bankView, narrativeFilename(scenario.name, 'docx'));
+        setShareNotice('Этот браузер не умеет отправлять файлы напрямую — файл скачан, приложите его вручную в письмо или мессенджер.');
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
