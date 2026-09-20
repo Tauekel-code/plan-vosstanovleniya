@@ -173,7 +173,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearApproval: () => {
     set((state) => {
       schedulePersist(snapshotFrom(state, { approvedScenarioId: null, approvedAt: null }));
-      return { approvedScenarioId: null, approvedAt: null };
+      // Mirrors approveActiveScenario's navigation: undoing the approval sends you back
+      // to where you'd edit the numbers, instead of stranding you on the now-empty summary.
+      return { approvedScenarioId: null, approvedAt: null, consoleScreen: 'dashboard' as const };
     });
   },
 
