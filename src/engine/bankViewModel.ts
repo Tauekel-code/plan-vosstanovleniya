@@ -8,7 +8,8 @@
  * export or share link built on top of BankView can leak internal data by
  * accident.
  */
-import type { DebtForecastMonth } from './types';
+import type { DebtForecastMonth, ScenarioParams } from './types';
+import { computeDebtForecast } from './financialEngine';
 
 export interface BankViewInput {
   revenue: number;
@@ -53,6 +54,30 @@ export function buildBankView(input: BankViewInput): BankView {
     revenueScenarioDeltaPct: input.revenueScenarioDeltaPct ?? 0,
     bankPctScenarioValue: input.bankPctScenarioValue ?? input.bankPct,
   };
+}
+
+/**
+ * Convenience wrapper used by every screen that needs "the bank-safe view of
+ * the current scenario, right now" (presentation, export, the memo). Only
+ * ever reads bankPct/bankDebt/revenue off the scenario — otherPct,
+ * businessPct and every internal expense field are never touched, so this
+ * still can't leak anything beyond what buildBankView itself allows.
+ */
+export function buildBankViewFromScenario(scenario: ScenarioParams, horizonMonths = 240): BankView {
+  const forecast = computeDebtForecast(
+    { bankPct: scenario.distribution.bankPct, otherPct: 0, businessPct: 100 - scenario.distribution.bankPct },
+    { bankDebt: scenario.debt.bankDebt, otherDebt: 0, bankExtraPayment: 0, otherExtraPayment: 0, assumedTermMonths: null },
+    () => scenario.revenue.monthlyRevenue,
+    horizonMonths,
+  );
+  return buildBankView({
+    revenue: scenario.revenue.monthlyRevenue,
+    bankPct: scenario.distribution.bankPct,
+    bankDebtRemaining: scenario.debt.bankDebt,
+    bankPayoffMonth: forecast.bankPayoffMonth,
+    paymentHistory: [],
+    forecastMonths: forecast.months,
+  });
 }
 
 /** Keys allowed in a Bank Export — used as a runtime allowlist so serialization can't widen. */

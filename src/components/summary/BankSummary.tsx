@@ -1,17 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { computeDebtForecast } from '../../engine/financialEngine';
-import { buildBankView } from '../../engine/bankViewModel';
-import { buildBankNarrative } from '../../engine/narrative';
+import { buildBankViewFromScenario } from '../../engine/bankViewModel';
+import { buildBankNarrative, narrativePdfFilename } from '../../engine/narrative';
 import { downloadNarrativePdf, narrativePdfBlob } from '../../engine/exportEngine';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../utils/format';
-
-function pdfFilename(scenarioName: string) {
-  const safeName = scenarioName.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-');
-  return `opisanie-${safeName}.pdf`;
-}
 
 export function BankSummary() {
   const scenarios = useAppStore((s) => s.scenarios);
@@ -24,30 +18,21 @@ export function BankSummary() {
   const scenario = scenarios.find((s) => s.id === activeScenarioId) ?? scenarios[0];
   const isApproved = approvedScenarioId === activeScenarioId && approvedAt !== null;
 
-  const bankView = useMemo(() => {
-    const forecast = computeDebtForecast(
-      { bankPct: scenario.distribution.bankPct, otherPct: 0, businessPct: 100 - scenario.distribution.bankPct },
-      { bankDebt: scenario.debt.bankDebt, otherDebt: 0, bankExtraPayment: 0, otherExtraPayment: 0, assumedTermMonths: null },
-      () => scenario.revenue.monthlyRevenue,
-      240,
-    );
-    return buildBankView({
-      revenue: scenario.revenue.monthlyRevenue,
-      bankPct: scenario.distribution.bankPct,
-      bankDebtRemaining: scenario.debt.bankDebt,
-      bankPayoffMonth: forecast.bankPayoffMonth,
-      paymentHistory: [],
-      forecastMonths: forecast.months,
-    });
-  }, [scenario]);
+  const bankView = useMemo(() => buildBankViewFromScenario(scenario), [scenario]);
 
   const narrative = isApproved ? buildBankNarrative(bankView, scenario.name, approvedAt!) : null;
   const [sharing, setSharing] = useState(false);
   const [shareNotice, setShareNotice] = useState<string | null>(null);
 
   function handleDownload() {
-    if (!narrative) return;
-    downloadNarrativePdf(narrative, bankView, pdfFilename(scenario.name));
+    if (narrative) {
+      downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
+      return;
+    }
+    // Not approved yet — approve first, then build the memo from that exact timestamp.
+    const newApprovedAt = approveActiveScenario();
+    const freshNarrative = buildBankNarrative(bankView, scenario.name, newApprovedAt);
+    downloadNarrativePdf(freshNarrative, bankView, narrativePdfFilename(scenario.name));
   }
 
   async function handleShare() {
@@ -56,7 +41,7 @@ export function BankSummary() {
     setShareNotice(null);
     try {
       const blob = narrativePdfBlob(narrative, bankView);
-      const file = new File([blob], pdfFilename(scenario.name), { type: 'application/pdf' });
+      const file = new File([blob], narrativePdfFilename(scenario.name), { type: 'application/pdf' });
       const nav = navigator as Navigator & {
         canShare?: (data: { files: File[] }) => boolean;
         share?: (data: { files: File[]; title: string; text: string }) => Promise<void>;
@@ -64,7 +49,7 @@ export function BankSummary() {
       if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
         await nav.share({ files: [file], title: narrative.title, text: narrative.scenarioLine });
       } else {
-        downloadNarrativePdf(narrative, bankView, pdfFilename(scenario.name));
+        downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
         setShareNotice('Этот браузер не умеет отправлять файлы напрямую — PDF скачан, приложите его вручную в письмо или мессенджер.');
       }
     } catch (err) {
@@ -118,11 +103,11 @@ export function BankSummary() {
       {!isApproved && (
         <Card className="p-8 text-center print:hidden">
           <p className="mx-auto max-w-md text-white/60">
-            Сценарий «{scenario.name}» ещё не утверждён. Проверьте цифры на главном экране и утвердите его — тогда
-            здесь появится готовый текст меморандума для печати.
+            Проверьте цифры сценария «{scenario.name}» на главном экране, затем скачайте его — здесь появится готовый
+            текст меморандума для печати и отправки.
           </p>
-          <Button variant="primary" className="mt-5" onClick={approveActiveScenario}>
-            Утвердить сценарий «{scenario.name}»
+          <Button variant="primary" className="mt-5" onClick={handleDownload}>
+            Скачать сценарий «{scenario.name}»
           </Button>
         </Card>
       )}

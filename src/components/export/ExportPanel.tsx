@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAppStore, type PersistedShape } from '../../store/useAppStore';
-import { computeModel, computeDebtForecast } from '../../engine/financialEngine';
-import { buildBankView } from '../../engine/bankViewModel';
+import { computeModel } from '../../engine/financialEngine';
+import { buildBankViewFromScenario } from '../../engine/bankViewModel';
 import {
   buildBankExportPayload,
   buildFullExportPayload,
@@ -31,22 +31,7 @@ export function ExportPanel() {
   const [kind, setKind] = useState<ExportKind>('full');
   const model = useMemo(() => computeModel(scenario), [scenario]);
 
-  const bankView = useMemo(() => {
-    const forecast = computeDebtForecast(
-      { bankPct: scenario.distribution.bankPct, otherPct: 0, businessPct: 100 - scenario.distribution.bankPct },
-      { bankDebt: scenario.debt.bankDebt, otherDebt: 0, bankExtraPayment: 0, otherExtraPayment: 0, assumedTermMonths: null },
-      () => scenario.revenue.monthlyRevenue,
-      240,
-    );
-    return buildBankView({
-      revenue: scenario.revenue.monthlyRevenue,
-      bankPct: scenario.distribution.bankPct,
-      bankDebtRemaining: scenario.debt.bankDebt,
-      bankPayoffMonth: forecast.bankPayoffMonth,
-      paymentHistory: [],
-      forecastMonths: forecast.months,
-    });
-  }, [scenario]);
+  const bankView = useMemo(() => buildBankViewFromScenario(scenario), [scenario]);
 
   const payload = kind === 'full' ? buildFullExportPayload(scenario, model, history) : buildBankExportPayload(bankView);
   const previewRows = flattenForTable(payload);

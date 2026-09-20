@@ -46,7 +46,8 @@ interface AppState extends PersistedShape {
   clearWhatIf: () => void;
   toggleWhatIf: (active: boolean) => void;
 
-  approveActiveScenario: () => void;
+  /** Approves the active scenario and returns the approval timestamp, so a caller can build a document from it immediately without waiting for a re-render. */
+  approveActiveScenario: () => string;
   clearApproval: () => void;
 
   upsertHistoryMonth: (entry: MonthlyActual) => void;
@@ -161,12 +162,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleWhatIf: (active) => set({ whatIfActive: active }),
 
   approveActiveScenario: () => {
+    const approvedAt = new Date().toISOString();
     set((state) => {
       const approvedScenarioId = state.activeScenarioId;
-      const approvedAt = new Date().toISOString();
       schedulePersist(snapshotFrom(state, { approvedScenarioId, approvedAt }));
       return { approvedScenarioId, approvedAt, consoleScreen: 'summary' as const };
     });
+    return approvedAt;
   },
   clearApproval: () => {
     set((state) => {

@@ -18,6 +18,11 @@ export interface BankNarrative {
   closing: string;
 }
 
+export function narrativePdfFilename(scenarioName: string): string {
+  const safeName = scenarioName.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-');
+  return `opisanie-${safeName}.pdf`;
+}
+
 export function buildBankNarrative(
   bankView: BankView,
   scenarioName: string,

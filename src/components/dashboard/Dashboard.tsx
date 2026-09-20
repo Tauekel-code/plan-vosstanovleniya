@@ -8,6 +8,9 @@ import { Button } from '../ui/Button';
 import { InstrumentSlider } from '../ui/InstrumentSlider';
 import { LiquidityChannel, type ChannelSegment } from '../ui/LiquidityChannel';
 import { WarningBanner } from '../ui/WarningBanner';
+import { buildBankViewFromScenario } from '../../engine/bankViewModel';
+import { buildBankNarrative, narrativePdfFilename } from '../../engine/narrative';
+import { downloadNarrativePdf } from '../../engine/exportEngine';
 import { DistributionEditor } from './DistributionEditor';
 import { ExpensesEditor } from './ExpensesEditor';
 import { DebtEditor } from './DebtEditor';
@@ -62,6 +65,17 @@ export function Dashboard() {
   const bankJustPaidOff = scenario.debt.bankDebt <= 0;
   const isApproved = approvedScenarioId === scenario.id;
 
+  function handleDownloadScenario() {
+    if (isApproved) {
+      setConsoleScreen('summary');
+      return;
+    }
+    const approvedAt = approveActiveScenario();
+    const bankView = buildBankViewFromScenario(scenario);
+    const narrative = buildBankNarrative(bankView, scenario.name, approvedAt);
+    downloadNarrativePdf(narrative, bankView, narrativePdfFilename(scenario.name));
+  }
+
   return (
     <div className="space-y-6 pb-16">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -78,11 +92,8 @@ export function Dashboard() {
               Утверждён
             </span>
           )}
-          <Button
-            variant={isApproved ? 'outline' : 'primary'}
-            onClick={() => (isApproved ? setConsoleScreen('summary') : approveActiveScenario())}
-          >
-            {isApproved ? 'Открыть описание' : 'Утвердить сценарий'}
+          <Button variant={isApproved ? 'outline' : 'primary'} onClick={handleDownloadScenario}>
+            {isApproved ? 'Открыть описание' : 'Скачать сценарий'}
           </Button>
         </div>
       </div>
