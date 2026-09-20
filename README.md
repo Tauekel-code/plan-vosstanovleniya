@@ -11,6 +11,17 @@ npm run build     # production-сборка в dist/
 npm run test      # тесты финансового движка (Vitest)
 ```
 
+## Публичная ссылка
+
+https://tauekel-code.github.io/plan-vosstanovleniya/
+
+Обновляется автоматически при `git push` в `main` (см. `.github/workflows/deploy.yml`). Чтобы задеплоить вручную:
+
+```bash
+npx vite build --base=/plan-vosstanovleniya/
+npx gh-pages -d dist
+```
+
 ## Архитектура
 
 - `src/engine/` — Financial Engine (единый источник истины), Scenario Engine, What-if Engine, Forecast Engine, Reverse Calculator, BankViewModel (физически отделённая от полной модели структура для банка), Export Engine.
