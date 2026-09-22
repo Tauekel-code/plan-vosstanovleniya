@@ -6,6 +6,7 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { PlanActual } from './components/planactual/PlanActual';
 import { WhatIf } from './components/whatif/WhatIf';
 import { ReverseCalculator } from './components/reverse/ReverseCalculator';
+import { RevenuePlan } from './components/revenueplan/RevenuePlan';
 import { Scenarios } from './components/scenarios/Scenarios';
 import { ExportPanel } from './components/export/ExportPanel';
 import { BankSummary } from './components/summary/BankSummary';
@@ -38,6 +39,7 @@ export default function App() {
       {consoleScreen === 'planActual' && <PlanActual />}
       {consoleScreen === 'whatIf' && <WhatIf />}
       {consoleScreen === 'reverse' && <ReverseCalculator />}
+      {consoleScreen === 'revenuePlan' && <RevenuePlan />}
       {consoleScreen === 'scenarios' && <Scenarios />}
       {consoleScreen === 'summary' && <BankSummary />}
       {consoleScreen === 'export' && <ExportPanel />}

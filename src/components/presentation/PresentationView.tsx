@@ -104,7 +104,7 @@ export function PresentationView() {
             min={5}
             max={40}
             step={1}
-            format={(v) => `${v}%`}
+            format={(v) => `${Math.round(v)}%`}
             marks={[10, 20, 25, 30]}
             colorVar={BANK_COLOR}
             onChange={setBankPct}

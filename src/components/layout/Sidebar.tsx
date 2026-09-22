@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 
 const NAV: { key: ConsoleScreen; label: string; hint: string }[] = [
   { key: 'dashboard', label: 'Главный экран', hint: 'Поток и обязательства' },
+  { key: 'revenuePlan', label: 'План доходов', hint: 'Продажи и абонплата' },
   { key: 'planActual', label: 'План / Факт', hint: 'По месяцам' },
   { key: 'whatIf', label: 'Что будет, если…', hint: 'Моделирование' },
   { key: 'reverse', label: 'Обратный калькулятор', hint: 'От срока к выручке' },

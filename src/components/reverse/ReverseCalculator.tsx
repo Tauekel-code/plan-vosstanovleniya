@@ -28,7 +28,7 @@ export function ReverseCalculator() {
           min={1}
           max={120}
           step={1}
-          format={(v) => `${v} мес.`}
+          format={(v) => `${Math.round(v)} мес.`}
           marks={[6, 12, 24, 36, 60]}
           accent="brass"
           size="hero"

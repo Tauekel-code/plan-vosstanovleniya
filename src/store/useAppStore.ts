@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { MonthlyActual, ScenarioParams } from '../engine/types';
 import { createDefaultScenarios, cloneScenarioAsCustom } from '../engine/scenarioEngine';
 import type { WhatIfOverrides } from '../engine/whatIfEngine';
+import { defaultRevenuePlanParams, type RevenuePlanParams } from '../engine/revenuePlanEngine';
 import { loadPersistedState, persistState } from './db';
 
 // Two audiences only: the owner's full console, and the bank-safe presentation
@@ -12,6 +13,7 @@ export type ConsoleScreen =
   | 'planActual'
   | 'whatIf'
   | 'reverse'
+  | 'revenuePlan'
   | 'scenarios'
   | 'summary'
   | 'export';
@@ -23,6 +25,7 @@ export interface PersistedShape {
   history: MonthlyActual[];
   approvedScenarioId: string | null;
   approvedAt: string | null;
+  revenuePlan: RevenuePlanParams;
 }
 
 interface AppState extends PersistedShape {
@@ -53,6 +56,8 @@ interface AppState extends PersistedShape {
   upsertHistoryMonth: (entry: MonthlyActual) => void;
   removeHistoryMonth: (month: string) => void;
 
+  updateRevenuePlan: (patch: Partial<RevenuePlanParams>) => void;
+
   importState: (data: PersistedShape) => void;
   resetAll: () => void;
 }
@@ -66,6 +71,7 @@ function defaultShape(): PersistedShape {
     history: [],
     approvedScenarioId: null,
     approvedAt: null,
+    revenuePlan: defaultRevenuePlanParams(),
   };
 }
 
@@ -86,6 +92,7 @@ function snapshotFrom(state: AppState, overrides: Partial<PersistedShape> = {}):
     history: state.history,
     approvedScenarioId: state.approvedScenarioId,
     approvedAt: state.approvedAt,
+    revenuePlan: state.revenuePlan,
     ...overrides,
   };
 }
@@ -105,6 +112,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         ...persisted,
         approvedScenarioId: persisted.approvedScenarioId ?? null,
         approvedAt: persisted.approvedAt ?? null,
+        revenuePlan: persisted.revenuePlan ?? defaultRevenuePlanParams(),
         hydrated: true,
       });
     } else {
@@ -199,12 +207,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
+  updateRevenuePlan: (patch) => {
+    set((state) => {
+      const revenuePlan = { ...state.revenuePlan, ...patch };
+      schedulePersist(snapshotFrom(state, { revenuePlan }));
+      return { revenuePlan };
+    });
+  },
+
   importState: (data) => {
     // Older backups predate the approval feature — default those fields in rather than importing `undefined`.
     const normalized: PersistedShape = {
       ...data,
       approvedScenarioId: data.approvedScenarioId ?? null,
       approvedAt: data.approvedAt ?? null,
+      revenuePlan: data.revenuePlan ?? defaultRevenuePlanParams(),
     };
     set({ ...normalized });
     schedulePersist(normalized);

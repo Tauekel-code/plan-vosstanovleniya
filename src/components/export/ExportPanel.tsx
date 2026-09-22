@@ -25,6 +25,7 @@ export function ExportPanel() {
   const history = useAppStore((s) => s.history);
   const approvedScenarioId = useAppStore((s) => s.approvedScenarioId);
   const approvedAt = useAppStore((s) => s.approvedAt);
+  const revenuePlan = useAppStore((s) => s.revenuePlan);
   const importState = useAppStore((s) => s.importState);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +47,7 @@ export function ExportPanel() {
       history,
       approvedScenarioId,
       approvedAt,
+      revenuePlan,
     };
     downloadJSON(shape, `plan-backup-${new Date().toISOString().slice(0, 10)}.json`);
   }
