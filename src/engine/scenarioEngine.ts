@@ -18,7 +18,7 @@ function baseExpenses() {
 }
 
 function baseDistribution() {
-  return { bankPct: 20, otherPct: 20, businessPct: 60 };
+  return { bankPct: 10, otherPct: 10, businessPct: 80 };
 }
 
 export function createScenario(
